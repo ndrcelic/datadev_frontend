@@ -1,6 +1,6 @@
 import React from "react";
 
-function ListOfImages  ({images, onSelect})  {
+function ListOfImages  ({images, onSelect, saveBoxEnabled})  {
     return (
         <div>
             <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "20px", alignContent: "center" }}>
@@ -11,8 +11,8 @@ function ListOfImages  ({images, onSelect})  {
                             key={img.id}
                             src={img.row_image}
                             alt={`Image_id ${img.id}`}
-                            style={{ width: "100%", height: "auto", objectFit: "cover", cursor: "pointer" }}
-                            onClick={() => onSelect(img)}
+                            style={{ width: "100%", height: "auto", objectFit: "cover", cursor: saveBoxEnabled ? "not-allowed" : "pointer" }}
+                            onClick={() => !saveBoxEnabled && onSelect(img)}
                         />
                         <p style={{ wordBreak: "break-all", fontSize: "0.9em"}}>Id: {img.id}</p>
                     </div>
