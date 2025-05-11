@@ -1,25 +1,58 @@
-import logo from './logo.svg';
-import './App.css';
+import React, {useEffect, useState} from "react";
+import api from "./services/api"
+import ListOfImages from "./components/ListOfImages";
+import ImageUpload from "./components/UploadImage";
+import DrawingLayer from "./components/DrawingLayer";
 
 function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
-}
+    const [images, setImages] = useState([]);
+    const [selectedImage, setSelectedImage] = useState(null);
+
+    const fetchImages = async() => {
+		try {
+        	const response = await api.get('images');
+        	setImages(response.data);
+      	} catch (error) {
+        	console.error("Error fetching image: ", error);
+      	}
+    };
+
+    useEffect(() => {
+		fetchImages();
+    }, []);
+
+    const handleUpload = async(file) => {
+		if (!file) return alert ("Select an image, please!");
+    	
+		const formData= new FormData();
+		formData.append("file", file);
+
+		try {
+			const response = await api.post("/images", formData, {
+				Headers : {
+					"Content-Type": "multipart/form-data",
+				},
+			});
+
+			const image_id = response.data;
+			alert(`Image has been uploaded! ID: ${image_id}`);
+			fetchImages();
+		}catch (err) {
+            alert("Error during upload!");
+        }
+	};
+
+    return (
+      <div style= {{display: 'flex'}}>
+		<div style={{ width: '50%', padding: '1rem', marginLeft: "15%" }}>
+			<ImageUpload onUpload={handleUpload} />
+			<DrawingLayer selectedImage={selectedImage} />
+		</div>
+		<div style={{ width: '50%', padding: '1rem', marginRight: "20%" }}>
+			<ListOfImages images={images} onSelect={setSelectedImage} />
+		</div>
+	  </div>
+    );
+};
 
 export default App;
