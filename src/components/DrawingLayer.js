@@ -17,6 +17,8 @@ function DrawingLayer ({selectedImage, setIsDrawing})  {
 
     const [saveButtonEnabled, setSaveButtonEnabled] = useState(false);
 
+    const [description, setDescription] = useState("")
+
     const canvasWidth = 600;
     const canvasHeight = 300;
 
@@ -226,16 +228,17 @@ function DrawingLayer ({selectedImage, setIsDrawing})  {
                 y: currentPos.y,
                 w: currentPos.width,
                 h: currentPos.height,
+                description: description,
             };
 
             try {
-                console.log(`images/${selectedImage.id}/annotations`)
                 const response = await api.post(`images/${selectedImage.id}/annotations`, payload);
                 setSaveButtonEnabled(false);
                 setIsDrawing(false);
                 setCurrentPos(null);
                 drawing(null, null, isFinishedPolygon);
                 setMode('u');
+                setDescription("");
                 alert("Box annotations successfully saved!", response.data);
             } catch (error){
                 alert("Error during upload annotations!")
@@ -248,12 +251,12 @@ function DrawingLayer ({selectedImage, setIsDrawing})  {
             const formattedPoints = polyPoints.map(point => [point.x, point.y])
 
             const payload = {
-                "type": "polygon",
-                "points": formattedPoints,
+                type: "polygon",
+                points: formattedPoints,
+                description: description,
             };
 
             try {
-                console.log(`images/${selectedImage.id}/annotations`)
                 const response = await api.post(`images/${selectedImage.id}/annotations`, payload);
                 setSaveButtonEnabled(false);
                 setIsDrawing(false);
@@ -261,12 +264,11 @@ function DrawingLayer ({selectedImage, setIsDrawing})  {
                 isFinishedPolygon.current = false;
                 drawing(null, null, isFinishedPolygon);
                 setMode('u');
+                setDescription("");
                 alert("Polygon annotations successfully saved!", response.data);
             } catch (error){
                 alert("Error during upload annotations!")
             }
-
-
         }
     }
 
@@ -307,8 +309,37 @@ function DrawingLayer ({selectedImage, setIsDrawing})  {
         setIsDrawingBox(false);
         setIsDrawingPolygon(false);
         setMode('u');
+        setDescription("");
         isFinishedPolygon.current = false;
     }
+
+    const handleDownloadJSON = async () => {
+        if(!selectedImage) return;
+
+        try{
+            const response = await api.get(`images/${selectedImage.id}/download_annotations`, {
+                responseType: 'blob',
+            });
+
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const element = document.createElement("a");
+            element.href = url;
+            element.download = `image_${selectedImage.id}.json`;
+            document.body.appendChild(element);
+            element.click();
+
+            window.URL.revokeObjectURL(url);
+
+        } catch (error) {
+            alert("Error during download!")
+        }
+    };
+
+    const handleDescription = (event) => {
+        if (event.target.value.length <= 200) {
+            setDescription(event.target.value);
+        }
+    };
 
     return (
         <div>
@@ -317,8 +348,9 @@ function DrawingLayer ({selectedImage, setIsDrawing})  {
                     <button onClick={() => setMode('b')} style = {{ marginLeft: '20px'}} disabled={!selectedImage || saveButtonEnabled || isDrawingPolygon}>Draw Box</button>
                     <button onClick={() => setMode('p')} style = {{ marginLeft: '30px'}} disabled={!selectedImage || isDrawingPolygon || saveButtonEnabled}>Draw Polygon</button>
                     <button onClick={handleClearAll} style = {{ marginLeft: '30px'}}>Clear all</button>
+                    <button onClick={handleDownloadJSON} style = {{marginLeft: '10em'}} disabled={!selectedImage}>Download JSON</button>
                 </div>
-                <h3>Selected Image</h3>
+                <h3>Selected Image: {selectedImage ? selectedImage.id : ""}</h3>
                 {mode === 'p' ? <label>POLYGON</label> : null}
                 {mode === 'b' ? <label>BOX</label> : null}
                 <canvas ref={canvasRef} style={{border: '1px solid #ccc'}}
@@ -335,47 +367,63 @@ function DrawingLayer ({selectedImage, setIsDrawing})  {
                         onClick={handleFinishPolygon}
                     >Finish and View Polygon</button>
                 </div>
-                {currentPos &&  (
-                    <table style={{ borderCollapse: 'collapse', marginTop: '1rem'}}>
-                        <tbody>
-                            <tr>
-                                <td style={{ padding: '4px 8px' }}><strong>X point: </strong></td>
-                                <td style={{ padding: '4px 8px' }}>{currentPos.x}</td>
-                            </tr>
-                            <tr>
-                                <td style={{ padding: '4px 8px' }}><strong>Y point: </strong></td>
-                                <td style={{ padding: '4px 8px' }}>{currentPos.y}</td>
-                            </tr>
-                            <tr>
-                                <td style={{ padding: '4px 8px' }}><strong>Width: </strong></td>
-                                <td style={{ padding: '4px 8px' }}>{currentPos.width}</td>
-                            </tr>
-                            <tr>
-                                <td style={{ padding: '4px 8px' }}><strong>Height: </strong></td>
-                                <td style={{ padding: '4px 8px' }}>{currentPos.height}</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                )}
-                {polyPoints.length > 0 && (
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>X point</th>
-                                <th>Y point</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {polyPoints.map((point, index) =>
-                                <tr key={index}>
-                                    <td>{point.x.toFixed(4)}</td>
-                                    <td>{point.y.toFixed(4)}</td>
-                                </tr>
-                            )}
-                        </tbody>
-                    </table>
-                )}
+                <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'start'}}>
+                    <div>
+                        {currentPos &&  (
+                            <table style={{ borderCollapse: 'collapse', marginTop: '1rem'}}>
+                                <tbody>
+                                    <tr>
+                                        <td style={{ padding: '4px 8px' }}><strong>X point: </strong></td>
+                                        <td style={{ padding: '4px 8px' }}>{currentPos.x.toFixed(4)}</td>
+                                    </tr>
+                                    <tr>
+                                        <td style={{ padding: '4px 8px' }}><strong>Y point: </strong></td>
+                                        <td style={{ padding: '4px 8px' }}>{currentPos.y.toFixed(4)}</td>
+                                    </tr>
+                                    <tr>
+                                        <td style={{ padding: '4px 8px' }}><strong>Width: </strong></td>
+                                        <td style={{ padding: '4px 8px' }}>{currentPos.width}</td>
+                                    </tr>
+                                    <tr>
+                                        <td style={{ padding: '4px 8px' }}><strong>Height: </strong></td>
+                                        <td style={{ padding: '4px 8px' }}>{currentPos.height}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        )}
+                        {polyPoints.length > 0 && (
+                            <table border={1} style = {{marginTop: '1rem'}}>
+                                <thead>
+                                    <tr>
+                                        <th>X point</th>
+                                        <th>Y point</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {polyPoints.map((point, index) =>
+                                        <tr key={index}>
+                                            <td>{point.x.toFixed(4)}</td>
+                                            <td>{point.y.toFixed(4)}</td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        )}
+                    </div>
 
+                    {saveButtonEnabled && (
+                        <div style={{marginTop: '3em', marginLeft: '7em'}}>
+                            <textarea
+                                value={description}
+                                onChange={handleDescription}
+                                placeholder='Input description (max 200 characters)'
+                                rows='3'
+                                // cols="40"
+                            />
+                            <p>{description.length} / 200 charackters</p>
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
     );
