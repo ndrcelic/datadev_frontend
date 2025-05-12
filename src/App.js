@@ -7,7 +7,7 @@ import DrawingLayer from "./components/DrawingLayer";
 function App() {
     const [images, setImages] = useState([]);
     const [selectedImage, setSelectedImage] = useState(null);
-	const [saveBoxEnabled, setSaveBoxEnabled] = useState(false);
+	const [isDrawing, setIsDrawing] = useState(false);
 
     const fetchImages = async() => {
 		try {
@@ -47,10 +47,10 @@ function App() {
       <div style= {{display: 'flex'}}>
 		<div style={{ width: '50%', padding: '1rem', marginLeft: "15%" }}>
 			<ImageUpload onUpload={handleUpload} />
-			<DrawingLayer selectedImage={selectedImage} saveBoxEnabled={saveBoxEnabled} setSaveBoxEnabled={setSaveBoxEnabled} />
+			<DrawingLayer selectedImage={selectedImage} setIsDrawing={setIsDrawing} />
 		</div>
 		<div style={{ width: '50%', padding: '1rem', marginRight: "20%" }}>
-			<ListOfImages images={images} onSelect={setSelectedImage}  saveBoxEnabled={saveBoxEnabled}/>
+			<ListOfImages images={images} onSelect={setSelectedImage}  isDrawing={isDrawing} />
 		</div>
 	  </div>
     );
