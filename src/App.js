@@ -44,7 +44,7 @@ function App() {
 	};
 
     return (
-      <div style= {{display: 'flex'}}>
+      <div style= {{display: 'flex', flex: 'wrap'}}>
 		<div style={{ width: '50%', padding: '1rem', marginLeft: "15%" }}>
 			<ImageUpload onUpload={handleUpload} />
 			<DrawingLayer selectedImage={selectedImage} setIsDrawing={setIsDrawing} />

@@ -405,7 +405,7 @@ function DrawingLayer ({selectedImage, setIsDrawing})  {
                     <button onClick={() => {setMode('b'); setAllAnnotations(null)}} style = {{ marginLeft: '20px'}} disabled={!selectedImage || saveButtonEnabled || isDrawingPolygon}>Draw Box</button>
                     <button onClick={() => {setMode('p'); setAllAnnotations(null)}} style = {{ marginLeft: '30px'}} disabled={!selectedImage || isDrawingPolygon || saveButtonEnabled}>Draw Polygon</button>
                     <button onClick={handleClearAll} style = {{ marginLeft: '30px'}}>Clear All</button>
-                    <button onClick={handleGetAnnotations} style = {{marginLeft: '5em'}} disabled={!selectedImage || mode != 'u'}>Get All Annotations</button>
+                    <button onClick={handleGetAnnotations} style = {{marginLeft: '5em'}} disabled={!selectedImage || mode !== 'u'}>Get All Annotations</button>
                     <button onClick={handleDownloadJSON} style = {{marginLeft: '5em'}} disabled={!selectedImage}>Download JSON</button>
                 </div>
                 <h3>Selected Image: {selectedImage ? selectedImage.id : ""}</h3>
