@@ -265,7 +265,7 @@ function DrawingLayer ({selectedImage, setIsDrawing})  {
         setIsDrawingPolygon(false);
         setMode('u');
         setDescription("");
-        setIsFinishedPolyon(true);
+        setIsFinishedPolyon(false);
         setAllAnnotations(null);
     };
 
