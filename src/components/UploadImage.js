@@ -15,7 +15,7 @@ function ImageUpload ({onUpload}) {
         <div>
             <h3>Upload Image</h3>
             <input type="file" accept="image/*" ref={imageInputRef} />
-            <button onClick={handleImageChange}>SEND</button>
+            <button onClick={handleImageChange}>UPLOAD</button>
         </div>
     );
 };

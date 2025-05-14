@@ -421,9 +421,11 @@ function DrawingLayer ({selectedImage, setIsDrawing})  {
                     <button disabled={!saveButtonEnabled} style={{ marginTop: '1rem'}} onClick={handleSaveButtonButton}>
                         Save shape
                     </button>
-                    <button disabled={!selectedImage || !isDrawingPolygon || polyPoints.length < 3} style={{ marginLeft: '10rem', marginTop: '1rem'}}
-                        onClick={handleFinishPolygon}
-                    >Finish and View Polygon</button>
+                    {mode === 'p' && (
+                        <button disabled={!selectedImage || !isDrawingPolygon || polyPoints.length < 3} style={{ marginLeft: '10rem', marginTop: '1rem'}}
+                            onClick={handleFinishPolygon}
+                        >Finish and View Polygon</button>
+                    )}
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'start'}}>
                     <div>
