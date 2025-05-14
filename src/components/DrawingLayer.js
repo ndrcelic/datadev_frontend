@@ -1,5 +1,6 @@
 import React, {useEffect, useRef, useState} from 'react';
 import api from "../services/api"
+import { all } from 'axios';
 
 function DrawingLayer ({selectedImage, setIsDrawing})  {
     const canvasRef = useRef();
@@ -16,6 +17,8 @@ function DrawingLayer ({selectedImage, setIsDrawing})  {
     const isFinishedPolygon = useRef(false);
 
     const [saveButtonEnabled, setSaveButtonEnabled] = useState(false);
+
+    const [allAnnotations, setAllAnnotations] = useState(null)
 
     const [description, setDescription] = useState("")
 
@@ -76,6 +79,44 @@ function DrawingLayer ({selectedImage, setIsDrawing})  {
                         ctx.stroke();
                     }
                 }
+
+                if (allAnnotations) {
+                    const boxes = allAnnotations.boxes;
+                    const polygons = allAnnotations.polygons;;
+
+                    boxes.forEach((obj) => {
+                        ctx.strokeStyle = 'red';
+                        ctx.lineWidth = 1;
+                        ctx.strokeRect(obj.x_point, obj.y_point, obj.width, obj.height);
+                    });
+
+                    
+                    polygons.forEach((obj) => {
+                        
+
+                        obj.points.forEach(({x_point, y_point}) => {
+                            ctx.beginPath();
+                            ctx.arc(x_point, y_point, 3, 0, 2* Math.PI);
+                            ctx.fillStyle = 'blue';
+                            ctx.fill();
+                        });
+
+                        obj.points.forEach(({x_point, y_point}, index) => {
+                            if (index === 0) {
+                                ctx.beginPath();
+                                ctx.moveTo(x_point, y_point);
+                            } else {
+                                ctx.lineTo(x_point, y_point);
+                            }
+                        });
+
+                        ctx.lineTo(obj.points[0].x_point, obj.points[0].y_point);
+
+                        ctx.strokeStyle = 'blue';
+                        ctx.lineWidth = 1;
+                        ctx.stroke();
+                    });
+                }
             }
 
             img.src= selectedImage.row_image;
@@ -85,7 +126,7 @@ function DrawingLayer ({selectedImage, setIsDrawing})  {
 
     useEffect(() => {
         drawing(currentPos, currentPolyPos, isFinishedPolygon);
-    }, [selectedImage, currentPos, currentPolyPos])
+    }, [selectedImage, currentPos, currentPolyPos, allAnnotations])
     
     // useEffect(() => {
     //     if (selectedImage && canvasRef.current) {
@@ -203,7 +244,7 @@ function DrawingLayer ({selectedImage, setIsDrawing})  {
         };
 
         setCurrentPos(boxCurrently);
-        drawing(boxCurrently, null, isFinishedPolygon);
+        drawing(boxCurrently, null, isFinishedPolygon, null);
         
     }
 
@@ -214,7 +255,7 @@ function DrawingLayer ({selectedImage, setIsDrawing})  {
             return;
         }
         setIsDrawingBox(false);
-        drawing(currentPos, null, isFinishedPolygon);
+        drawing(currentPos, null, isFinishedPolygon, null);
         setSaveButtonEnabled(true);
         setIsDrawing(true);   
     }
@@ -236,7 +277,7 @@ function DrawingLayer ({selectedImage, setIsDrawing})  {
                 setSaveButtonEnabled(false);
                 setIsDrawing(false);
                 setCurrentPos(null);
-                drawing(null, null, isFinishedPolygon);
+                drawing(null, null, isFinishedPolygon, null);
                 setMode('u');
                 setDescription("");
                 alert("Box annotations successfully saved!", response.data);
@@ -262,7 +303,7 @@ function DrawingLayer ({selectedImage, setIsDrawing})  {
                 setIsDrawing(false);
                 setPolyPoints([]);
                 isFinishedPolygon.current = false;
-                drawing(null, null, isFinishedPolygon);
+                drawing(null, null, isFinishedPolygon, null);
                 setMode('u');
                 setDescription("");
                 alert("Polygon annotations successfully saved!", response.data);
@@ -288,13 +329,13 @@ function DrawingLayer ({selectedImage, setIsDrawing})  {
 
         const newPoints = [...polyPoints, {x, y}]
         setPolyPoints(newPoints)
-        drawing(currentPos, newPoints, isFinishedPolygon);
+        drawing(currentPos, newPoints, isFinishedPolygon, null);
 
     }
 
     const handleFinishPolygon = async () => {
         isFinishedPolygon.current = true;
-        drawing(currentPos, polyPoints, isFinishedPolygon);
+        drawing(currentPos, polyPoints, isFinishedPolygon, null);
         setSaveButtonEnabled(true);
         setIsDrawingPolygon(false);
 
@@ -303,7 +344,7 @@ function DrawingLayer ({selectedImage, setIsDrawing})  {
     const handleClearAll = async() => {
         setCurrentPos(null);
         setPolyPoints([]);
-        drawing(null, null, isFinishedPolygon);
+        drawing(null, null, isFinishedPolygon, null);
         setSaveButtonEnabled(false);
         setIsDrawing(false);
         setIsDrawingBox(false);
@@ -311,6 +352,7 @@ function DrawingLayer ({selectedImage, setIsDrawing})  {
         setMode('u');
         setDescription("");
         isFinishedPolygon.current = false;
+        setAllAnnotations(null);
     }
 
     const handleDownloadJSON = async () => {
@@ -335,6 +377,21 @@ function DrawingLayer ({selectedImage, setIsDrawing})  {
         }
     };
 
+    const handleGetAnnotations = async () => {
+        if(!selectedImage) return;
+
+        try {
+            const response = await api.get(`images/${selectedImage.id}/annotations`);
+            setAllAnnotations(response.data);
+            setIsDrawing(true);
+            // drawing(null, null, false, allAnnotations);
+            
+
+        } catch (error) {
+            alert("Error durring get annotations!", error)
+        }
+    }
+
     const handleDescription = (event) => {
         if (event.target.value.length <= 200) {
             setDescription(event.target.value);
@@ -345,10 +402,11 @@ function DrawingLayer ({selectedImage, setIsDrawing})  {
         <div>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'start'}}>
                 <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center' , marginTop: '20px'}}>
-                    <button onClick={() => setMode('b')} style = {{ marginLeft: '20px'}} disabled={!selectedImage || saveButtonEnabled || isDrawingPolygon}>Draw Box</button>
-                    <button onClick={() => setMode('p')} style = {{ marginLeft: '30px'}} disabled={!selectedImage || isDrawingPolygon || saveButtonEnabled}>Draw Polygon</button>
-                    <button onClick={handleClearAll} style = {{ marginLeft: '30px'}}>Clear all</button>
-                    <button onClick={handleDownloadJSON} style = {{marginLeft: '10em'}} disabled={!selectedImage}>Download JSON</button>
+                    <button onClick={() => {setMode('b'); setAllAnnotations(null)}} style = {{ marginLeft: '20px'}} disabled={!selectedImage || saveButtonEnabled || isDrawingPolygon}>Draw Box</button>
+                    <button onClick={() => {setMode('p'); setAllAnnotations(null)}} style = {{ marginLeft: '30px'}} disabled={!selectedImage || isDrawingPolygon || saveButtonEnabled}>Draw Polygon</button>
+                    <button onClick={handleClearAll} style = {{ marginLeft: '30px'}}>Clear All</button>
+                    <button onClick={handleGetAnnotations} style = {{marginLeft: '5em'}} disabled={!selectedImage || mode != 'u'}>Get All Annotations</button>
+                    <button onClick={handleDownloadJSON} style = {{marginLeft: '5em'}} disabled={!selectedImage}>Download JSON</button>
                 </div>
                 <h3>Selected Image: {selectedImage ? selectedImage.id : ""}</h3>
                 {mode === 'p' ? <label>POLYGON</label> : null}
@@ -408,6 +466,13 @@ function DrawingLayer ({selectedImage, setIsDrawing})  {
                                     )}
                                 </tbody>
                             </table>
+                        )}
+                        {allAnnotations && (
+                            <pre style={{marginTop: '1rem'}}>
+                                <code>
+                                    {JSON.stringify(allAnnotations, null, 2)}
+                                </code>
+                            </pre>
                         )}
                     </div>
 
