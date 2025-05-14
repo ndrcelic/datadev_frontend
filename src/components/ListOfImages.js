@@ -4,7 +4,7 @@ function ListOfImages  ({images, onSelect, isDrawing})  {
     return (
         <div>
             <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "20px", alignContent: "center" }}>
-                <h3 style={{ textAlign: "center" }}>Images</h3>
+                <h3 style={{ textAlign: "center", marginRight: '4rem'}}>Images</h3>
                 {images.map((img) => (
                     <div key={img.id} style={{ width: "200px", textAlign: "center" }}>
                         <img

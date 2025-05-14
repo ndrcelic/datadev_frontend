@@ -1,6 +1,5 @@
 import React, {useEffect, useRef, useState} from 'react';
 import api from "../services/api"
-import { all } from 'axios';
 
 function DrawingLayer ({selectedImage, setIsDrawing})  {
     const canvasRef = useRef();
@@ -9,12 +8,10 @@ function DrawingLayer ({selectedImage, setIsDrawing})  {
     const [isDrawingBox, setIsDrawingBox] = useState(false)
     const [startPos, setStartPos] = useState(null);
     const [currentPos, setCurrentPos] = useState(null);
-    const [isImageSelected, setIsImageSelected] = useState(false);
 
     const [isDrawingPolygon, setIsDrawingPolygon] = useState(false)
     const [polyPoints, setPolyPoints] = useState([]);
-    const [currentPolyPos, setCurrentPolyPos] = useState(null);
-    const isFinishedPolygon = useRef(false);
+    const [isFinishedPolygon, setIsFinishedPolyon] = useState(false);
 
     const [saveButtonEnabled, setSaveButtonEnabled] = useState(false);
 
@@ -25,7 +22,8 @@ function DrawingLayer ({selectedImage, setIsDrawing})  {
     const canvasWidth = 600;
     const canvasHeight = 300;
 
-    const drawing = (box = null, polygon = null, isFinishedPolygon) => {
+    //const drawing = (box = null, polygon = null, isFinishedPolygon) => {
+    useEffect(() => {
         if (selectedImage && canvasRef.current) {
             const canvas = canvasRef.current;
             const ctx = canvas.getContext('2d');
@@ -50,29 +48,29 @@ function DrawingLayer ({selectedImage, setIsDrawing})  {
                 }
 
                 ctx.drawImage(img, 0, 0, drawWidth, drawHeight)
-                setIsImageSelected(true);
 
-                if (box) {
+                if (currentPos) {
                     ctx.strokeStyle = 'red';
                     ctx.lineWidth = 1;
-                    ctx.strokeRect(box.x, box.y, box.width, box.height);
+                    ctx.strokeRect(currentPos.x, currentPos.y, currentPos.width, currentPos.height);
                 }
-                if (polygon && polygon.length > 0) {
-                    polygon.forEach(({x, y}) => {
+                if (polyPoints && polyPoints.length > 0) {
+                    polyPoints.forEach(({x, y}) => {
                         ctx.beginPath();
                         ctx.arc(x, y, 3, 0, 2* Math.PI);
                         ctx.fillStyle = 'blue';
                         ctx.fill();
                     });
-                    if (isFinishedPolygon.current) {
-                        ctx.beginPath();
-                        ctx.moveTo(polygon[0].x, polygon[0].y);
 
-                        polygon.forEach(({x, y}) =>{
+                    if (isFinishedPolygon) {
+                        ctx.beginPath();
+                        ctx.moveTo(polyPoints[0].x, polyPoints[0].y);
+
+                        polyPoints.forEach(({x, y}) =>{
                             ctx.lineTo(x, y);
                         });
 
-                        ctx.lineTo(polygon[0].x, polygon[0].y);
+                        ctx.lineTo(polyPoints[0].x, polyPoints[0].y);
                         
                         ctx.strokeStyle = 'blue';
                         ctx.lineWidth = 1;
@@ -92,8 +90,6 @@ function DrawingLayer ({selectedImage, setIsDrawing})  {
 
                     
                     polygons.forEach((obj) => {
-                        
-
                         obj.points.forEach(({x_point, y_point}) => {
                             ctx.beginPath();
                             ctx.arc(x_point, y_point, 3, 0, 2* Math.PI);
@@ -122,94 +118,11 @@ function DrawingLayer ({selectedImage, setIsDrawing})  {
             img.src= selectedImage.row_image;
         } else return;
 
-    }
+    }, [selectedImage, currentPos, polyPoints, isFinishedPolygon, allAnnotations])
 
-    useEffect(() => {
-        drawing(currentPos, currentPolyPos, isFinishedPolygon);
-    }, [selectedImage, currentPos, currentPolyPos, allAnnotations])
-    
-    // useEffect(() => {
-    //     if (selectedImage && canvasRef.current) {
-    //         const canvas = canvasRef.current;
-    //         const ctx = canvas.getContext('2d');
-    //         const img = new Image();
-            
-    //         img.onload = () => {
-    //             canvas.width = canvasWidth;
-    //             canvas.height = canvasHeight;
-    //             ctx.clearRect(0, 0, canvasWidth, canvasHeight);
-    //             // ctx.drawImage(img, 0, 0);
-
-    //             const imgAspect = img.width / img.height;
-    //             const canvasAspect = canvasWidth / canvasHeight;
-
-    //             let drawWidth, drawHeight;
-
-    //             if (imgAspect > canvasAspect) {
-    //                 drawWidth = canvasWidth;
-    //                 drawHeight = canvasWidth / imgAspect;
-    //             } else {
-    //                 drawHeight = canvasHeight;
-    //                 drawWidth = canvasHeight * imgAspect;
-    //             }
-
-    //             ctx.drawImage(img, 0, 0, drawWidth, drawHeight)
-    //             setIsImageSelected(true);
-    //         };
-
-    //         img.src= selectedImage.row_image;
-
-    //     } else {
-    //         return;
-    //     }
-    // }, [selectedImage]);
-
-    // const addBox = (box = null) => {
-    //     if (selectedImage && canvasRef.current) {
-    //         const canvas = canvasRef.current;
-    //         const ctx = canvas.getContext('2d');
-    //         const img = new Image();
-    //         const canvasWidth = 600;
-    //         const canvasHeight = 300;
-
-    //         img.onload = () => {
-    //             canvas.width = canvasWidth;
-    //             canvas.height = canvasHeight;
-    //             ctx.clearRect(0, 0, canvasWidth, canvasHeight);
-    //             // ctx.drawImage(img, 0, 0);
-
-    //             const imgAspect = img.width / img.height;
-    //             const canvasAspect = canvasWidth / canvasHeight;
-
-    //             let drawWidth, drawHeight;
-
-    //             if (imgAspect > canvasAspect) {
-    //                 drawWidth = canvasWidth;
-    //                 drawHeight = canvasWidth / imgAspect;
-    //             } else {
-    //                 drawHeight = canvasHeight;
-    //                 drawWidth = canvasHeight * imgAspect;
-    //             }
-
-    //             ctx.drawImage(img, 0, 0, drawWidth, drawHeight)
-    //             setIsImageSelected(true);
-
-    //             if (box) {
-    //                 ctx.strokeStyle = 'red';
-    //                 ctx.lineWidth = 1;
-    //                 ctx.strokeRect(box.x, box.y, box.width, box.height);
-    //             }
-    //         };
-
-    //         img.src= selectedImage.row_image;
-
-    //     } else {
-    //         return;
-    //     }
-    // }
 
     const handleMouseDown = (e) => {
-        if (!isImageSelected || mode === 'p') return;
+        if (!selectedImage || mode === 'p') return;
         if (mode === 'u') {
             alert("Please choose a mode!")
             return;
@@ -218,12 +131,13 @@ function DrawingLayer ({selectedImage, setIsDrawing})  {
         const box = canvasRef.current.getBoundingClientRect();
         const x = e.clientX - box.left;
         const y = e.clientY - box.top;
+
         setStartPos({x, y});
         setIsDrawingBox(true);
-    }
+    };
 
     const handleMouseMove = (e) => {
-        if (!isImageSelected || !isDrawingBox || !startPos || mode === 'p') return;
+        if (!selectedImage || !isDrawingBox || !startPos || mode === 'p') return;
         if (mode === 'u') {
             alert("Please choose a mode!")
             return;
@@ -244,21 +158,21 @@ function DrawingLayer ({selectedImage, setIsDrawing})  {
         };
 
         setCurrentPos(boxCurrently);
-        drawing(boxCurrently, null, isFinishedPolygon, null);
+        // drawing(boxCurrently, null, isFinishedPolygon, null);
         
-    }
+    };
 
     const handleMouseUp = (e) => {
-        if (!isImageSelected || mode === 'p') return;
+        if (!selectedImage || mode === 'p') return;
         if (mode === 'u') {
             alert("Please choose a mode!")
             return;
         }
         setIsDrawingBox(false);
-        drawing(currentPos, null, isFinishedPolygon, null);
+        // drawing(currentPos, null, isFinishedPolygon, null);
         setSaveButtonEnabled(true);
         setIsDrawing(true);   
-    }
+    };
 
     const handleSaveButtonButton = async () => {
         if (mode === 'b') {
@@ -277,7 +191,7 @@ function DrawingLayer ({selectedImage, setIsDrawing})  {
                 setSaveButtonEnabled(false);
                 setIsDrawing(false);
                 setCurrentPos(null);
-                drawing(null, null, isFinishedPolygon, null);
+                // drawing(null, null, isFinishedPolygon, null);
                 setMode('u');
                 setDescription("");
                 alert("Box annotations successfully saved!", response.data);
@@ -286,7 +200,7 @@ function DrawingLayer ({selectedImage, setIsDrawing})  {
             }
         }
 
-        if (mode === 'p' && isFinishedPolygon.current) {
+        if (mode === 'p' && isFinishedPolygon) {
             if (polyPoints.length < 3) return
 
             const formattedPoints = polyPoints.map(point => [point.x, point.y])
@@ -302,8 +216,8 @@ function DrawingLayer ({selectedImage, setIsDrawing})  {
                 setSaveButtonEnabled(false);
                 setIsDrawing(false);
                 setPolyPoints([]);
-                isFinishedPolygon.current = false;
-                drawing(null, null, isFinishedPolygon, null);
+                setIsFinishedPolyon(false);
+                // drawing(null, null, isFinishedPolygon, null);
                 setMode('u');
                 setDescription("");
                 alert("Polygon annotations successfully saved!", response.data);
@@ -311,10 +225,10 @@ function DrawingLayer ({selectedImage, setIsDrawing})  {
                 alert("Error during upload annotations!")
             }
         }
-    }
+    };
 
     const handlePolygonClick = (e) => {
-        if (!isImageSelected || mode === 'b' || isFinishedPolygon.current) return;
+        if (!selectedImage || mode === 'b' || isFinishedPolygon) return;
         if (mode === 'u') {
             alert("Please choose a mode!")
             return;
@@ -329,31 +243,31 @@ function DrawingLayer ({selectedImage, setIsDrawing})  {
 
         const newPoints = [...polyPoints, {x, y}]
         setPolyPoints(newPoints)
-        drawing(currentPos, newPoints, isFinishedPolygon, null);
+        // drawing(currentPos, newPoints, isFinishedPolygon, null);
 
-    }
+    };
 
     const handleFinishPolygon = async () => {
-        isFinishedPolygon.current = true;
-        drawing(currentPos, polyPoints, isFinishedPolygon, null);
+        setIsFinishedPolyon(true);
+        // drawing(currentPos, polyPoints, isFinishedPolygon, null);
         setSaveButtonEnabled(true);
         setIsDrawingPolygon(false);
 
-    }
+    };
 
     const handleClearAll = async() => {
         setCurrentPos(null);
         setPolyPoints([]);
-        drawing(null, null, isFinishedPolygon, null);
+        // drawing(null, null, isFinishedPolygon, null);
         setSaveButtonEnabled(false);
         setIsDrawing(false);
         setIsDrawingBox(false);
         setIsDrawingPolygon(false);
         setMode('u');
         setDescription("");
-        isFinishedPolygon.current = false;
+        setIsFinishedPolyon(true);
         setAllAnnotations(null);
-    }
+    };
 
     const handleDownloadJSON = async () => {
         if(!selectedImage) return;
@@ -390,7 +304,7 @@ function DrawingLayer ({selectedImage, setIsDrawing})  {
         } catch (error) {
             alert("Error durring get annotations!", error)
         }
-    }
+    };
 
     const handleDescription = (event) => {
         if (event.target.value.length <= 200) {

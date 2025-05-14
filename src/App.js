@@ -49,7 +49,7 @@ function App() {
 			<ImageUpload onUpload={handleUpload} />
 			<DrawingLayer selectedImage={selectedImage} setIsDrawing={setIsDrawing} />
 		</div>
-		<div style={{ width: '50%', padding: '1rem', marginRight: "20%" }}>
+		<div style={{ width: '50%', padding: '1rem', marginRight: "15%" }}>
 			<ListOfImages images={images} onSelect={setSelectedImage}  isDrawing={isDrawing} />
 		</div>
 	  </div>
