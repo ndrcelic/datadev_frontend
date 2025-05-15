@@ -27,7 +27,6 @@ function DrawingLayer ({selectedImage, setIsDrawing})  {
     const canvasWidth = 600;
     const canvasHeight = 300;
 
-    //const drawing = (box = null, polygon = null, isFinishedPolygon) => {
     useEffect(() => {
         if (selectedImage && canvasRef.current) {
             const canvas = canvasRef.current;
@@ -38,7 +37,7 @@ function DrawingLayer ({selectedImage, setIsDrawing})  {
                 canvas.width = canvasWidth;
                 canvas.height = canvasHeight;
                 ctx.clearRect(0, 0, canvasWidth, canvasHeight);
-
+                
                 const imgAspect = img.width / img.height;
                 const canvasAspect = canvasWidth / canvasHeight;
 
@@ -243,7 +242,6 @@ function DrawingLayer ({selectedImage, setIsDrawing})  {
             })
         }
 
-
         try {
             const response = await api.post(`images/${selectedImage.id}/annotations`, payload);
             setSaveButtonEnabled(false);
@@ -253,6 +251,8 @@ function DrawingLayer ({selectedImage, setIsDrawing})  {
             setDescription("");
             setBoxArray([]);
             setPolygonArray([]);
+            setUndo([]);
+            setRedo([]);
             alert("Annotations successfully saved!", response.data);
         } catch (error){
             alert("Error during upload annotations!")
@@ -337,6 +337,7 @@ function DrawingLayer ({selectedImage, setIsDrawing})  {
             const response = await api.get(`images/${selectedImage.id}/annotations`);
             setAllAnnotations(response.data);
             setIsDrawing(true);
+            setUndo([]);
         } catch (error) {
             alert("Error durring get annotations!", error)
         }
@@ -379,6 +380,11 @@ function DrawingLayer ({selectedImage, setIsDrawing})  {
             setCurrentPos(null);
             setRedo(prev => [...prev, [box, lastOpp]]);
         }
+
+        console.log(undo.length)
+        if (undo.length === 0) {
+            setSaveButtonEnabled(false);
+        }
     };
 
     const handleRedo = async () => {
@@ -400,6 +406,8 @@ function DrawingLayer ({selectedImage, setIsDrawing})  {
             setBoxArray(prev => [...prev, lastOppObj[0]]);
             setUndo(prev => [...prev, 'b'])
         }
+
+        setSaveButtonEnabled(true);
     };
 
     return (
@@ -411,12 +419,12 @@ function DrawingLayer ({selectedImage, setIsDrawing})  {
                     <button onClick={() => {setMode('p'); setAllAnnotations(null)}} style = {{ marginLeft: '30px'}} disabled={!selectedImage || isDrawingBox}>Draw Polygon</button>
                     <button onClick={handleClearAll} style = {{ marginLeft: '30px'}}>Clear All</button>
                     <button onClick={handleGetAnnotations} style = {{marginLeft: '5em'}} disabled={!selectedImage || mode !== 'u'}>Get All Annotations</button>
-                    <button onClick={handleDownloadJSON} style = {{marginLeft: '5em'}} disabled={!selectedImage}>Download JSON</button>
+                    <button onClick={handleDownloadJSON} style = {{marginLeft: '5em'}} disabled={!selectedImage}>EXPORT</button>
                 </div>
                 <h3>Selected Image: {selectedImage ? selectedImage.id : ""}</h3>
                 {mode === 'p' ? <label>POLYGON</label> : null}
                 {mode === 'b' ? <label>BOX</label> : null}
-                <canvas ref={canvasRef} style={{border: '1px solid #ccc'}}
+                <canvas ref={canvasRef} style={{border: '1px solid #ccc'}} width="600" height="300"
                 onMouseDown={handleMouseDown}
                 onMouseMove={handleMouseMove}
                 onMouseUp={handleMouseUp}
