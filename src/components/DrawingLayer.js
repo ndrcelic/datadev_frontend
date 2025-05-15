@@ -21,6 +21,9 @@ function DrawingLayer ({selectedImage, setIsDrawing})  {
 
     const [description, setDescription] = useState("")
 
+    const [undo, setUndo] = useState([])
+    const [redo, setRedo] = useState([])
+
     const canvasWidth = 600;
     const canvasHeight = 300;
 
@@ -208,7 +211,9 @@ function DrawingLayer ({selectedImage, setIsDrawing})  {
         setSaveButtonEnabled(true);
         setIsDrawing(true);
         const newBox = [...boxArray, currentPos];
-        setBoxArray(newBox);   
+        setBoxArray(newBox);
+        
+        setUndo(prev => [...prev, 'b']);
     };
 
     const handleSaveButtonButton = async () => {
@@ -285,7 +290,7 @@ function DrawingLayer ({selectedImage, setIsDrawing})  {
 
         setPolygonArray(prev => [...prev, polyPoints]);
         setPolyPoints([]);
-
+        setUndo(prev => [...prev, 'p']);
     };
 
     const handleClearAll = async() => {
@@ -302,6 +307,8 @@ function DrawingLayer ({selectedImage, setIsDrawing})  {
         setAllAnnotations(null);
         setBoxArray([]);
         setPolygonArray([]);
+        setUndo([]);
+        setRedo([]);
     };
 
     const handleDownloadJSON = async () => {
@@ -347,6 +354,44 @@ function DrawingLayer ({selectedImage, setIsDrawing})  {
         }
     };
 
+    const handleUndo = async () => {
+        const lastOpp = undo.pop();
+        console.log(lastOpp)
+
+        if (lastOpp === 'p') {
+            const newPolygonArray = [...polygonArrray];
+            const pol = newPolygonArray.pop();
+            setPolygonArray(newPolygonArray);
+            setRedo(prev => [...prev, [pol, lastOpp]]);
+        }
+
+        if (lastOpp === 'b') {
+            const newBoxArray = [...boxArray]
+            const box = newBoxArray.pop();
+            setBoxArray(newBoxArray);
+            setCurrentPos(null);
+            setRedo(prev => [...prev, [box, lastOpp]]);
+        }
+    };
+
+    const handleRedo = (e) => {
+        if (redo.length <= 0) return;
+
+        const lastOppObj = redo.pop();
+        
+        if (lastOppObj[1] === 'p') {
+            setPolygonArray(prev => [...prev, lastOppObj[0]]);
+            setUndo(prev => [...prev, 'p'])
+        }
+
+        if (lastOppObj[1] === 'b') {
+            setBoxArray(prev => [...prev, lastOppObj[0]]);
+            setUndo(prev => [...prev, 'b'])
+        }
+        
+
+    }
+
     return (
         <div>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'start'}}>
@@ -366,16 +411,23 @@ function DrawingLayer ({selectedImage, setIsDrawing})  {
                 onMouseUp={handleMouseUp}
                 onClick={handlePolygonClick}
                 />
-                <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center' , marginTop: '20px'}}>
-                    <button disabled={!saveButtonEnabled} style={{ marginTop: '1rem'}} onClick={handleSaveButtonButton}>
-                        Save shape
-                    </button>
-                    {mode === 'p' && (
-                        <button disabled={!selectedImage || !isDrawingPolygon || polyPoints.length < 3} style={{ marginLeft: '10rem', marginTop: '1rem'}}
-                            onClick={handleFinishPolygon}
-                        >Finish and View Polygon</button>
-                    )}
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'start'}}>
+                    <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center' , marginTop: '20px'}}>
+                        <button onClick={handleUndo} disabled={undo.length === 0}>UNDO</button>
+                        <button onClick={handleRedo} disabled={redo.length === 0}>REDO</button>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center' , marginTop: '20px'}}>
+                        <button disabled={!saveButtonEnabled} style={{ marginTop: '1rem'}} onClick={handleSaveButtonButton}>
+                            Save shape
+                        </button>
+                        {mode === 'p' && (
+                            <button disabled={!selectedImage || !isDrawingPolygon || polyPoints.length < 3} style={{ marginLeft: '10rem', marginTop: '1rem'}}
+                                onClick={handleFinishPolygon}
+                            >Finish and View Polygon</button>
+                        )}
+                    </div>
                 </div>
+                
                 <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'start'}}>
                     <div>
                         {currentPos &&  mode === 'b' && (
