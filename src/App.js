@@ -47,7 +47,7 @@ function App() {
 
     return (
 	
-	<div className="container row">
+	<div className="container row text-center">
 		<div className="col">
 			<DrawingLayer selectedImage={selectedImage} setIsDrawing={setIsDrawing} />
 		</div>

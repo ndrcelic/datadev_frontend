@@ -411,36 +411,50 @@ function DrawingLayer ({selectedImage, setIsDrawing})  {
     };
 
     return (
-        <div style={{marginTop: "5rem"}}>
-            {/* <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'start'}}> */}
+        <div>
             <div>
-                <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center' , marginTop: '20px'}}>
-                    <button onClick={() => {setMode('b'); setAllAnnotations(null)}} style = {{ marginLeft: '20px'}} disabled={!selectedImage || isDrawingPolygon}>Draw Box</button>
-                    <button onClick={() => {setMode('p'); setAllAnnotations(null)}} style = {{ marginLeft: '30px'}} disabled={!selectedImage || isDrawingBox}>Draw Polygon</button>
-                    <button onClick={handleClearAll} style = {{ marginLeft: '30px'}}>Clear All</button>
-                    <button onClick={handleGetAnnotations} style = {{marginLeft: '5em'}} disabled={!selectedImage || mode !== 'u'}>Get All Annotations</button>
-                    <button onClick={handleDownloadJSON} style = {{marginLeft: '5em'}} disabled={!selectedImage}>EXPORT</button>
+                <div className="container mt-4">
+                    <div className="d-flex justify-content-end gap-1 mb-3">
+                        <button className="btn btn-outline-primary" onClick={handleGetAnnotations} style = {{marginLeft: '5em'}} disabled={!selectedImage || mode !== 'u'}>Get All Annotations</button>
+                        <button className="btn btn-outline-primary" onClick={handleDownloadJSON} style = {{marginLeft: '5em'}} disabled={!selectedImage}>EXPORT</button>
+                    </div>
+                    <div className="d-flex flex-wrap gap-3">
+                        <button className="btn btn-outline-primary" onClick={() => {setMode('b'); setAllAnnotations(null)}} style = {{ marginLeft: '20px'}} disabled={!selectedImage || isDrawingPolygon}>Draw Box</button>
+                        <button className="btn btn-outline-primary" onClick={() => {setMode('p'); setAllAnnotations(null)}} style = {{ marginLeft: '30px'}} disabled={!selectedImage || isDrawingBox}>Draw Polygon</button>
+                        <button className="btn btn-outline-primary" onClick={handleClearAll} style = {{ marginLeft: '30px'}}>Clear All</button>
+                    </div>
                 </div>
-                <h3>Selected Image: {selectedImage ? selectedImage.id : ""}</h3>
-                {mode === 'p' ? <label>POLYGON</label> : null}
-                {mode === 'b' ? <label>BOX</label> : null}
-                <canvas ref={canvasRef} style={{border: '1px solid #ccc'}} width="600" height="300"
-                onMouseDown={handleMouseDown}
-                onMouseMove={handleMouseMove}
-                onMouseUp={handleMouseUp}
-                onClick={handlePolygonClick}
+
+                <div className="d-flex align-items-center mt-4 ml-4 flex-wrap gap-3">
+                    <div className="d-flex gap-2">
+                        <button className="btn btn-secondary btn-sm" onClick={handleUndo} disabled={undo.length === 0}>UNDO</button>
+                        <button className="btn btn-secondary btn-sm" onClick={handleRedo} disabled={redo.length === 0}>REDO</button>
+                    </div>
+
+                    <div className="d-flex flex-column align-items-center mt-2">
+                        <h4 className="mb-2 ml-4">Selected Image: {selectedImage ? selectedImage.id : ""}</h4>
+                        <div>
+                            <span className="ml-4">Current selection:&nbsp;&nbsp;</span>
+                            {mode === 'p' && <strong>POLYGON</strong>}
+                            {mode === 'b' && <strong>BOX</strong>}
+                            {mode === 'u' && <strong>NOT SELCTED</strong>}
+                        </div>
+                    </div>
+                </div>
+
+                <canvas ref={canvasRef} style={{border: '2px solid #ccc'}} width="600" height="300"
+                    onMouseDown={handleMouseDown}
+                    onMouseMove={handleMouseMove}
+                    onMouseUp={handleMouseUp}
+                    onClick={handlePolygonClick}
                 />
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'start'}}>
-                    <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center' , marginTop: '20px', marginLeft:'200px'}}>
-                        <button onClick={handleUndo} disabled={undo.length === 0}>UNDO</button>
-                        <button onClick={handleRedo} disabled={redo.length === 0}>REDO</button>
-                    </div>
                     <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center' , marginTop: '20px'}}>
-                        <button disabled={!saveButtonEnabled} style={{ marginTop: '1rem'}} onClick={handleSaveButtonButton}>
+                        <button className="btn btn-success" disabled={!saveButtonEnabled} style={{ marginTop: '1rem'}} onClick={handleSaveButtonButton}>
                             Save shape
                         </button>
                         {mode === 'p' && (
-                            <button disabled={!selectedImage || !isDrawingPolygon || polyPoints.length < 3} style={{ marginLeft: '10rem', marginTop: '1rem'}}
+                            <button className="btn btn-info" disabled={!selectedImage || !isDrawingPolygon || polyPoints.length < 3} style={{ marginLeft: '10rem', marginTop: '1rem'}}
                                 onClick={handleFinishPolygon}
                             >Finish and View Polygon</button>
                         )}
@@ -490,7 +504,7 @@ function DrawingLayer ({selectedImage, setIsDrawing})  {
                             </table>
                         )}
                         {allAnnotations && (
-                            <pre style={{marginTop: '1rem'}}>
+                            <pre style={{marginTop: '1rem', textAlign: "left"}}>
                                 <code>
                                     {JSON.stringify(allAnnotations, null, 2)}
                                 </code>
