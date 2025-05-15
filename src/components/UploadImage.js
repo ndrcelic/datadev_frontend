@@ -12,7 +12,7 @@ function ImageUpload ({onUpload}) {
     };
 
     return (
-        <div>
+        <div className="mt-4">
             <h3>Upload Image</h3>
             <input type="file" accept="image/*" ref={imageInputRef} />
             <button onClick={handleImageChange}>UPLOAD</button>

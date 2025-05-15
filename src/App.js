@@ -3,6 +3,8 @@ import api from "./services/api"
 import ListOfImages from "./components/ListOfImages";
 import ImageUpload from "./components/UploadImage";
 import DrawingLayer from "./components/DrawingLayer";
+import 'bootstrap/dist/js/bootstrap.bundle.min.js';
+import 'bootstrap/dist/css/bootstrap.min.css';
 
 function App() {
     const [images, setImages] = useState([]);
@@ -44,13 +46,16 @@ function App() {
 	};
 
     return (
-      <div style= {{display: 'flex', flex: 'wrap'}}>
-		<div style={{ width: '50%', padding: '1rem', marginLeft: "15%" }}>
-			<ImageUpload onUpload={handleUpload} />
+	
+	<div className="container row">
+		<div className="col">
 			<DrawingLayer selectedImage={selectedImage} setIsDrawing={setIsDrawing} />
 		</div>
-		<div style={{ width: '50%', padding: '1rem', marginRight: "15%" }}>
-			<ListOfImages images={images} onSelect={setSelectedImage}  isDrawing={isDrawing} />
+		<div className="col">
+			<div className="container">
+				<ImageUpload onUpload={handleUpload} className="row"/>
+				<ListOfImages images={images} onSelect={setSelectedImage}  isDrawing={isDrawing} className="row"/>
+			</div>
 		</div>
 	  </div>
     );

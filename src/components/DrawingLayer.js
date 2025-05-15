@@ -21,8 +21,8 @@ function DrawingLayer ({selectedImage, setIsDrawing})  {
 
     const [description, setDescription] = useState("")
 
-    const [undo, setUndo] = useState([])
-    const [redo, setRedo] = useState([])
+    const [undo, setUndo] = useState([]);
+    const [redo, setRedo] = useState([]);
 
     const canvasWidth = 600;
     const canvasHeight = 300;
@@ -91,7 +91,7 @@ function DrawingLayer ({selectedImage, setIsDrawing})  {
                     ctx.stroke();
                 });
 
-                
+
                 if (polyPoints && polyPoints.length > 0) {
                     polyPoints.forEach(({x, y}) => {
                         ctx.beginPath();
@@ -197,7 +197,6 @@ function DrawingLayer ({selectedImage, setIsDrawing})  {
         };
 
         setCurrentPos(boxCurrently);
-        // drawing(boxCurrently, null, isFinishedPolygon, null);
     };
 
     const handleMouseUp = (e) => {
@@ -207,13 +206,13 @@ function DrawingLayer ({selectedImage, setIsDrawing})  {
             return;
         }
         setIsDrawingBox(false);
-        // drawing(currentPos, null, isFinishedPolygon, null);
         setSaveButtonEnabled(true);
         setIsDrawing(true);
         const newBox = [...boxArray, currentPos];
         setBoxArray(newBox);
         
         setUndo(prev => [...prev, 'b']);
+        setRedo([]);
     };
 
     const handleSaveButtonButton = async () => {
@@ -250,7 +249,6 @@ function DrawingLayer ({selectedImage, setIsDrawing})  {
             setSaveButtonEnabled(false);
             setIsDrawing(false);
             setCurrentPos(null);
-            // drawing(null, null, isFinishedPolygon, null);
             setMode('u');
             setDescription("");
             setBoxArray([]);
@@ -278,25 +276,24 @@ function DrawingLayer ({selectedImage, setIsDrawing})  {
 
         const newPoints = [...polyPoints, {x, y}]
         setPolyPoints(newPoints)
-        // drawing(currentPos, newPoints, isFinishedPolygon, null);
-
+        setUndo(prev => [...prev, 'c']);
+        setRedo([]);
     };
 
     const handleFinishPolygon = async () => {
         setIsFinishedPolyon(true);
-        // drawing(currentPos, polyPoints, isFinishedPolygon, null);
         setSaveButtonEnabled(true);
         setIsDrawingPolygon(false);
 
         setPolygonArray(prev => [...prev, polyPoints]);
         setPolyPoints([]);
         setUndo(prev => [...prev, 'p']);
+        setRedo([]);
     };
 
     const handleClearAll = async() => {
         setCurrentPos(null);
         setPolyPoints([]);
-        // drawing(null, null, isFinishedPolygon, null);
         setSaveButtonEnabled(false);
         setIsDrawing(false);
         setIsDrawingBox(false);
@@ -340,9 +337,6 @@ function DrawingLayer ({selectedImage, setIsDrawing})  {
             const response = await api.get(`images/${selectedImage.id}/annotations`);
             setAllAnnotations(response.data);
             setIsDrawing(true);
-            // drawing(null, null, false, allAnnotations);
-            
-
         } catch (error) {
             alert("Error durring get annotations!", error)
         }
@@ -356,13 +350,26 @@ function DrawingLayer ({selectedImage, setIsDrawing})  {
 
     const handleUndo = async () => {
         const lastOpp = undo.pop();
-        console.log(lastOpp)
+
+        if (lastOpp === 'c') {
+            const newCoordinates = [...polyPoints];
+            const coordinate = newCoordinates.pop();
+            setPolyPoints(newCoordinates);
+            setRedo(prev => [...prev, [coordinate, lastOpp]]);
+            if (newCoordinates.length === 0) {
+                setIsDrawingPolygon(false);
+            }
+        }
 
         if (lastOpp === 'p') {
             const newPolygonArray = [...polygonArrray];
             const pol = newPolygonArray.pop();
+            const formated = undo.filter(item => item !== 'c');
+            setUndo(formated);
             setPolygonArray(newPolygonArray);
             setRedo(prev => [...prev, [pol, lastOpp]]);
+            setPolyPoints([]);
+            
         }
 
         if (lastOpp === 'b') {
@@ -374,11 +381,16 @@ function DrawingLayer ({selectedImage, setIsDrawing})  {
         }
     };
 
-    const handleRedo = (e) => {
+    const handleRedo = async () => {
         if (redo.length <= 0) return;
 
         const lastOppObj = redo.pop();
         
+        if (lastOppObj[1] === 'c') {
+            setPolyPoints(prev => [...prev, lastOppObj[0]]);
+            setUndo(prev => [...prev, 'c']);
+        }
+
         if (lastOppObj[1] === 'p') {
             setPolygonArray(prev => [...prev, lastOppObj[0]]);
             setUndo(prev => [...prev, 'p'])
@@ -388,13 +400,12 @@ function DrawingLayer ({selectedImage, setIsDrawing})  {
             setBoxArray(prev => [...prev, lastOppObj[0]]);
             setUndo(prev => [...prev, 'b'])
         }
-        
-
-    }
+    };
 
     return (
-        <div>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'start'}}>
+        <div style={{marginTop: "5rem"}}>
+            {/* <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'start'}}> */}
+            <div>
                 <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center' , marginTop: '20px'}}>
                     <button onClick={() => {setMode('b'); setAllAnnotations(null)}} style = {{ marginLeft: '20px'}} disabled={!selectedImage || isDrawingPolygon}>Draw Box</button>
                     <button onClick={() => {setMode('p'); setAllAnnotations(null)}} style = {{ marginLeft: '30px'}} disabled={!selectedImage || isDrawingBox}>Draw Polygon</button>
@@ -412,7 +423,7 @@ function DrawingLayer ({selectedImage, setIsDrawing})  {
                 onClick={handlePolygonClick}
                 />
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'start'}}>
-                    <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center' , marginTop: '20px'}}>
+                    <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center' , marginTop: '20px', marginLeft:'200px'}}>
                         <button onClick={handleUndo} disabled={undo.length === 0}>UNDO</button>
                         <button onClick={handleRedo} disabled={redo.length === 0}>REDO</button>
                     </div>
@@ -452,7 +463,7 @@ function DrawingLayer ({selectedImage, setIsDrawing})  {
                                 </tbody>
                             </table>
                         )}
-                        {polyPoints.length > 0 && mode === 'p' && (
+                        {polyPoints.length > 0 && mode === 'p' && isDrawingPolygon && (
                             <table border={1} style = {{marginTop: '1rem'}}>
                                 <thead>
                                     <tr>
