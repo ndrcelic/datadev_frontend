@@ -371,6 +371,9 @@ function DrawingLayer ({selectedImage, setIsDrawing})  {
             setRedo(prev => [...prev, [pol, lastOpp]]);
             setPolyPoints([]);
             
+            if (formated.length === 0) {
+                setSaveButtonEnabled(false);
+            }
         }
 
         if (lastOpp === 'b') {
@@ -381,7 +384,6 @@ function DrawingLayer ({selectedImage, setIsDrawing})  {
             setRedo(prev => [...prev, [box, lastOpp]]);
         }
 
-        console.log(undo.length)
         if (undo.length === 0) {
             setSaveButtonEnabled(false);
         }
