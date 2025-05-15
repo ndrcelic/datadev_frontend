@@ -8,10 +8,12 @@ function DrawingLayer ({selectedImage, setIsDrawing})  {
     const [isDrawingBox, setIsDrawingBox] = useState(false)
     const [startPos, setStartPos] = useState(null);
     const [currentPos, setCurrentPos] = useState(null);
+    const [boxArray, setBoxArray] = useState([])
 
     const [isDrawingPolygon, setIsDrawingPolygon] = useState(false)
     const [polyPoints, setPolyPoints] = useState([]);
     const [isFinishedPolygon, setIsFinishedPolyon] = useState(false);
+    const [polygonArrray, setPolygonArray] = useState([])
 
     const [saveButtonEnabled, setSaveButtonEnabled] = useState(false);
 
@@ -49,11 +51,44 @@ function DrawingLayer ({selectedImage, setIsDrawing})  {
 
                 ctx.drawImage(img, 0, 0, drawWidth, drawHeight)
 
+                
+                boxArray.forEach((obj) => {
+                    ctx.strokeStyle = 'red';
+                    ctx.lineWidth = 1;
+                    ctx.strokeRect(obj.x, obj.y, obj.width, obj.height);
+                });
+
                 if (currentPos) {
                     ctx.strokeStyle = 'red';
                     ctx.lineWidth = 1;
                     ctx.strokeRect(currentPos.x, currentPos.y, currentPos.width, currentPos.height);
                 }
+
+                polygonArrray.forEach((obj) => {
+                    obj.forEach(({x, y}) => {
+                        ctx.beginPath();
+                        ctx.arc(x, y, 3, 0, 2* Math.PI);
+                        ctx.fillStyle = 'blue';
+                        ctx.fill();
+                    });
+
+                    obj.forEach(({x, y}, index) => {
+                        if (index === 0) {
+                            ctx.beginPath();
+                            ctx.moveTo(x, y);
+                        } else {
+                            ctx.lineTo(x, y);
+                        }
+                    });
+
+                    ctx.lineTo(obj[0].x, obj[0].y);
+
+                    ctx.strokeStyle = 'blue';
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                });
+
+                
                 if (polyPoints && polyPoints.length > 0) {
                     polyPoints.forEach(({x, y}) => {
                         ctx.beginPath();
@@ -118,7 +153,7 @@ function DrawingLayer ({selectedImage, setIsDrawing})  {
             img.src= selectedImage.row_image;
         } else return;
 
-    }, [selectedImage, currentPos, polyPoints, isFinishedPolygon, allAnnotations])
+    }, [selectedImage, currentPos, boxArray, polyPoints, isFinishedPolygon, polygonArrray, allAnnotations])
 
 
     const handleMouseDown = (e) => {
@@ -134,6 +169,7 @@ function DrawingLayer ({selectedImage, setIsDrawing})  {
 
         setStartPos({x, y});
         setIsDrawingBox(true);
+        setSaveButtonEnabled(false);
     };
 
     const handleMouseMove = (e) => {
@@ -159,7 +195,6 @@ function DrawingLayer ({selectedImage, setIsDrawing})  {
 
         setCurrentPos(boxCurrently);
         // drawing(boxCurrently, null, isFinishedPolygon, null);
-        
     };
 
     const handleMouseUp = (e) => {
@@ -171,64 +206,58 @@ function DrawingLayer ({selectedImage, setIsDrawing})  {
         setIsDrawingBox(false);
         // drawing(currentPos, null, isFinishedPolygon, null);
         setSaveButtonEnabled(true);
-        setIsDrawing(true);   
+        setIsDrawing(true);
+        const newBox = [...boxArray, currentPos];
+        setBoxArray(newBox);   
     };
 
     const handleSaveButtonButton = async () => {
-        if (mode === 'b') {
-            if (!currentPos) return;
-            const payload = {
-                type: "box",
-                x: currentPos.x,
-                y: currentPos.y,
-                w: currentPos.width,
-                h: currentPos.height,
-                description: description,
-            };
+        const payload = []
 
-            try {
-                const response = await api.post(`images/${selectedImage.id}/annotations`, payload);
-                setSaveButtonEnabled(false);
-                setIsDrawing(false);
-                setCurrentPos(null);
-                // drawing(null, null, isFinishedPolygon, null);
-                setMode('u');
-                setDescription("");
-                alert("Box annotations successfully saved!", response.data);
-            } catch (error){
-                alert("Error during upload annotations!")
-            }
+        if (boxArray.length > 0) {
+            boxArray.forEach((newBox) => {
+                payload.push({
+                    type: "box",
+                    x: newBox.x,
+                    y: newBox.y,
+                    w: newBox.width,
+                    h: newBox.height,
+                    description: description,
+                })
+
+            })
         }
 
-        if (mode === 'p' && isFinishedPolygon) {
-            if (polyPoints.length < 3) return
+        if (polygonArrray.length > 0) {
+            polygonArrray.forEach((newPolygon) => {
+                const formattedPoints = newPolygon.map(point => [point.x, point.y])
+                payload.push({
+                    type: "polygon",
+                    points: formattedPoints,
+                    description: description,
+                })
+            })
+        }
 
-            const formattedPoints = polyPoints.map(point => [point.x, point.y])
 
-            const payload = {
-                type: "polygon",
-                points: formattedPoints,
-                description: description,
-            };
-
-            try {
-                const response = await api.post(`images/${selectedImage.id}/annotations`, payload);
-                setSaveButtonEnabled(false);
-                setIsDrawing(false);
-                setPolyPoints([]);
-                setIsFinishedPolyon(false);
-                // drawing(null, null, isFinishedPolygon, null);
-                setMode('u');
-                setDescription("");
-                alert("Polygon annotations successfully saved!", response.data);
-            } catch (error){
-                alert("Error during upload annotations!")
-            }
+        try {
+            const response = await api.post(`images/${selectedImage.id}/annotations`, payload);
+            setSaveButtonEnabled(false);
+            setIsDrawing(false);
+            setCurrentPos(null);
+            // drawing(null, null, isFinishedPolygon, null);
+            setMode('u');
+            setDescription("");
+            setBoxArray([]);
+            setPolygonArray([]);
+            alert("Annotations successfully saved!", response.data);
+        } catch (error){
+            alert("Error during upload annotations!")
         }
     };
 
     const handlePolygonClick = (e) => {
-        if (!selectedImage || mode === 'b' || isFinishedPolygon) return;
+        if (!selectedImage || mode === 'b') return;
         if (mode === 'u') {
             alert("Please choose a mode!")
             return;
@@ -237,7 +266,8 @@ function DrawingLayer ({selectedImage, setIsDrawing})  {
         const canvas = canvasRef.current.getBoundingClientRect();
         const x = e.clientX - canvas.left;
         const y = e.clientY - canvas.top;
-
+        setIsFinishedPolyon(false);
+        setSaveButtonEnabled(false);
         setIsDrawing(true);
         setIsDrawingPolygon(true);
 
@@ -253,6 +283,9 @@ function DrawingLayer ({selectedImage, setIsDrawing})  {
         setSaveButtonEnabled(true);
         setIsDrawingPolygon(false);
 
+        setPolygonArray(prev => [...prev, polyPoints]);
+        setPolyPoints([]);
+
     };
 
     const handleClearAll = async() => {
@@ -267,6 +300,8 @@ function DrawingLayer ({selectedImage, setIsDrawing})  {
         setDescription("");
         setIsFinishedPolyon(false);
         setAllAnnotations(null);
+        setBoxArray([]);
+        setPolygonArray([]);
     };
 
     const handleDownloadJSON = async () => {
@@ -316,8 +351,8 @@ function DrawingLayer ({selectedImage, setIsDrawing})  {
         <div>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'start'}}>
                 <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center' , marginTop: '20px'}}>
-                    <button onClick={() => {setMode('b'); setAllAnnotations(null)}} style = {{ marginLeft: '20px'}} disabled={!selectedImage || saveButtonEnabled || isDrawingPolygon}>Draw Box</button>
-                    <button onClick={() => {setMode('p'); setAllAnnotations(null)}} style = {{ marginLeft: '30px'}} disabled={!selectedImage || isDrawingPolygon || saveButtonEnabled}>Draw Polygon</button>
+                    <button onClick={() => {setMode('b'); setAllAnnotations(null)}} style = {{ marginLeft: '20px'}} disabled={!selectedImage || isDrawingPolygon}>Draw Box</button>
+                    <button onClick={() => {setMode('p'); setAllAnnotations(null)}} style = {{ marginLeft: '30px'}} disabled={!selectedImage || isDrawingBox}>Draw Polygon</button>
                     <button onClick={handleClearAll} style = {{ marginLeft: '30px'}}>Clear All</button>
                     <button onClick={handleGetAnnotations} style = {{marginLeft: '5em'}} disabled={!selectedImage || mode !== 'u'}>Get All Annotations</button>
                     <button onClick={handleDownloadJSON} style = {{marginLeft: '5em'}} disabled={!selectedImage}>Download JSON</button>
@@ -343,7 +378,7 @@ function DrawingLayer ({selectedImage, setIsDrawing})  {
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'start'}}>
                     <div>
-                        {currentPos &&  (
+                        {currentPos &&  mode === 'b' && (
                             <table style={{ borderCollapse: 'collapse', marginTop: '1rem'}}>
                                 <tbody>
                                     <tr>
@@ -365,7 +400,7 @@ function DrawingLayer ({selectedImage, setIsDrawing})  {
                                 </tbody>
                             </table>
                         )}
-                        {polyPoints.length > 0 && (
+                        {polyPoints.length > 0 && mode === 'p' && (
                             <table border={1} style = {{marginTop: '1rem'}}>
                                 <thead>
                                     <tr>
